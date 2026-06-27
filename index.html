@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>iOS Push Notification Payload Builder — APNs JSON Generator</title>
+<meta name="description" content="Build and test iOS push notification payloads. Configure alert, badge, sound, content-available, interruption level, and custom keys. Export APNs-ready JSON and a cURL command. Free, browser-only." />
+<link rel="canonical" href="https://ios-push-payload-builder.vercel.app/" />
+<meta property="og:title" content="iOS Push Notification Payload Builder" />
+<meta property="og:description" content="Construct APNs push payloads visually — all standard fields including interruption levels, critical alerts, and custom keys. Export JSON or a ready-to-run cURL command. Free." />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="iOS Push Notification Payload Builder" />
+<meta name="twitter:description" content="Build APNs payloads and export a cURL test command. Supports all iOS 16+ fields. Free." />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"iOS Push Notification Payload Builder","url":"https://ios-push-payload-builder.vercel.app/","description":"Visual builder for iOS APNs push notification payloads. Supports all standard and live-activity fields. Exports JSON and cURL test commands.","applicationCategory":"DeveloperApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+</script>
+<style>
+  :root{
+    --bg:#0b0c10;--panel:#15171f;--panel2:#1c1f2a;--ink:#eef1f7;--muted:#9aa3b5;
+    --line:#262a36;--accent:#5b8cff;--ok:#34d399;--warn:#fbbf24;--err:#f87171;
+    --radius:14px;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);background:radial-gradient(1100px 600px at 20% -10%,#0d1a30 0,transparent 55%),var(--bg)}
+  header{padding:42px 22px 10px;max-width:1060px;margin:0 auto}
+  .badge{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);
+    border:1px solid var(--line);padding:5px 11px;border-radius:999px;background:var(--panel)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok)}
+  h1{font-size:30px;margin:16px 0 6px;letter-spacing:-.4px}
+  h1 span{color:var(--accent)}
+  .sub{color:var(--muted);max-width:640px}
+  main{max-width:1060px;margin:18px auto 60px;padding:0 22px;display:grid;grid-template-columns:1fr 400px;gap:22px;align-items:start}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+
+  /* Cards */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+  h2{font-size:14px;font-weight:700;color:var(--ink);margin:0 0 14px;text-transform:uppercase;letter-spacing:.5px}
+  .field-group{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:640px){.field-group{grid-template-columns:1fr}}
+  .span2{grid-column:span 2}
+  .field-block{display:flex;flex-direction:column;gap:5px}
+  .field-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .field-hint{font-size:11.5px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;line-height:1.4;margin-top:2px}
+  input[type=text],input[type=number],select,textarea{background:var(--panel2);border:1px solid var(--line);
+    color:var(--ink);border-radius:8px;padding:8px 12px;font:inherit;font-size:14px;outline:none;width:100%}
+  input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:var(--accent)}
+  input[type=number]{font-family:var(--mono)}
+
+  /* Toggles */
+  .toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .toggle-row label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:600}
+  .toggle-row input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--accent);flex:none}
+  .section-toggle{margin-bottom:12px}
+
+  /* Inline rows */
+  .inline-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+  .inline-row label{font-size:13px;color:var(--muted);white-space:nowrap}
+  .inline-row input{flex:1}
+
+  /* Custom keys */
+  .custom-key-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  .custom-key-row input,.custom-key-row select{background:var(--panel2);border:1px solid var(--line);
+    color:var(--ink);border-radius:8px;padding:7px 10px;font:inherit;font-size:13.5px;outline:none}
+  .custom-key-row input:focus,.custom-key-row select:focus{border-color:var(--accent)}
+  .remove-key-btn{cursor:pointer;border:1px solid var(--line);border-radius:7px;padding:5px 10px;
+    font:12px/1 inherit;background:none;color:var(--muted);flex:none}
+  .remove-key-btn:hover{border-color:var(--err);color:var(--err)}
+  .add-key-btn{cursor:pointer;border:1px dashed var(--line);border-radius:8px;padding:7px 14px;
+    font:13px/1 inherit;font-weight:600;background:none;color:var(--muted);width:100%;margin-top:4px}
+  .add-key-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* Output panel */
+  .output-panel{position:sticky;top:22px}
+  .output-block{background:var(--panel2);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px}
+  .output-header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .output-label{font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;flex:1}
+  .push-type-tag{font-size:11.5px;font-family:var(--mono);color:var(--accent);background:rgba(91,140,255,.12);
+    padding:2px 8px;border-radius:5px}
+  .copy-btn{cursor:pointer;border:1px solid var(--line);border-radius:7px;padding:4px 12px;
+    font:12px/1 inherit;font-weight:600;background:none;color:var(--muted)}
+  .copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+  pre{margin:0;padding:14px;font-size:12.5px;font-family:var(--mono);white-space:pre-wrap;word-break:break-all;
+    color:var(--ink);max-height:420px;overflow-y:auto;line-height:1.5}
+
+  /* Size bar */
+  .size-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--line)}
+  .size-bar-bg{flex:1;height:5px;background:var(--line);border-radius:99px;overflow:hidden}
+  .size-bar{height:100%;border-radius:99px;transition:width .25s,background .2s;min-width:2px}
+  .size-label{font-size:12px;font-family:var(--mono);color:var(--muted);white-space:nowrap}
+
+  /* Config row */
+  .config-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .config-row .field-block{flex:1;min-width:160px}
+
+  .tip-box{background:linear-gradient(135deg,#1a2035 0%,#141825 100%);border:1px solid #2a304a;
+    border-radius:14px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:4px}
+  footer{max-width:1060px;margin:0 auto;padding:0 22px 50px;color:#6b7385;font-size:12.5px;grid-column:1/-1}
+  footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <span class="badge"><span class="dot"></span>APNs HTTP/2 API · All iOS 16+ fields · browser-only</span>
+  <h1>iOS Push Notification <span>Payload Builder</span></h1>
+  <p class="sub">Build your APNs payload visually, see the JSON update live, and export a cURL command ready to paste in your terminal.</p>
+</header>
+<main>
+
+<!-- LEFT: Configuration -->
+<div>
+
+  <!-- Target -->
+  <div class="card">
+    <h2>Target</h2>
+    <div class="config-row">
+      <div class="field-block">
+        <span class="field-label">Bundle ID (apns-topic)</span>
+        <input id="bundleId" type="text" placeholder="com.yourapp.bundle" spellcheck="false" />
+      </div>
+      <div class="field-block">
+        <span class="field-label">Environment</span>
+        <select id="environment">
+          <option value="sandbox">Sandbox (development)</option>
+          <option value="production">Production</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-block">
+      <span class="field-label">Device Token</span>
+      <input id="deviceToken" type="text" placeholder="64-hex-character device token" spellcheck="false" style="font-family:var(--mono);font-size:12.5px" />
+      <span class="field-hint">Used only in the exported cURL command — never sent anywhere by this page.</span>
+    </div>
+  </div>
+
+  <!-- Alert -->
+  <div class="card">
+    <div class="toggle-row section-toggle">
+      <label><input type="checkbox" id="alertEnabled" checked onchange="onAlertToggle()" /> Alert (user-visible notification)</label>
+    </div>
+    <div id="alertFields" class="field-group">
+      <div class="field-block span2">
+        <span class="field-label">Title</span>
+        <input id="title" type="text" placeholder="Notification title" />
+      </div>
+      <div class="field-block">
+        <span class="field-label">Subtitle</span>
+        <input id="subtitle" type="text" placeholder="Optional subtitle" />
+      </div>
+      <div class="field-block">
+        <span class="field-label">Body</span>
+        <input id="body" type="text" placeholder="Notification body text" />
+      </div>
+      <div class="field-block">
+        <span class="field-label">title-loc-key <span style="font-weight:400;text-transform:none">(localised)</span></span>
+        <input id="titleLocKey" type="text" placeholder="TITLE_KEY" spellcheck="false" />
+      </div>
+      <div class="field-block">
+        <span class="field-label">loc-key <span style="font-weight:400;text-transform:none">(localised)</span></span>
+        <input id="locKey" type="text" placeholder="BODY_KEY" spellcheck="false" />
+      </div>
+      <div class="field-block">
+        <span class="field-label">launch-image</span>
+        <input id="launchImage" type="text" placeholder="MyLaunchImage" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Badge -->
+  <div class="card">
+    <div class="toggle-row section-toggle">
+      <label><input type="checkbox" id="badgeEnabled" onchange="onBadgeToggle()" /> Badge Count</label>
+    </div>
+    <div id="badgeField" style="display:none">
+      <div class="field-block" style="max-width:120px">
+        <span class="field-label">Count</span>
+        <input id="badge" type="number" min="0" value="1" />
+      </div>
+      <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">Set to 0 to clear the badge.</p>
+    </div>
+  </div>
+
+  <!-- Sound -->
+  <div class="card">
+    <div class="toggle-row section-toggle">
+      <label><input type="checkbox" id="soundEnabled" onchange="onSoundToggle()" /> Sound</label>
+    </div>
+    <div id="soundFields" style="display:none">
+      <div class="field-block" style="margin-bottom:10px">
+        <span class="field-label">Sound Type</span>
+        <select id="soundType" onchange="onSoundTypeChange()">
+          <option value="default">Default system sound</option>
+          <option value="custom">Custom sound file</option>
+          <option value="critical">Critical alert (bypasses mute)</option>
+        </select>
+      </div>
+      <div id="soundNameRow" class="inline-row" style="display:none">
+        <label>Sound name</label>
+        <input id="soundName" type="text" placeholder="notification.aiff" />
+      </div>
+      <div id="criticalVolumeRow" class="inline-row" style="display:none">
+        <label>Volume (0.0 – 1.0)</label>
+        <input id="criticalVolume" type="number" min="0" max="1" step="0.1" value="1.0" style="max-width:80px" />
+        <span style="font-size:12.5px;color:var(--warn)">Critical alerts bypass silent mode — use sparingly.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flags -->
+  <div class="card">
+    <h2>Delivery Flags</h2>
+    <div class="toggle-row">
+      <label><input type="checkbox" id="contentAvailable" /> content-available: 1</label>
+    </div>
+    <p class="field-hint" style="margin:-4px 0 10px 26px">Wakes your app in the background to process the notification. Required for silent pushes.</p>
+    <div class="toggle-row">
+      <label><input type="checkbox" id="mutableContent" /> mutable-content: 1</label>
+    </div>
+    <p class="field-hint" style="margin:-4px 0 0 26px">Lets your Notification Service Extension modify the payload before display.</p>
+  </div>
+
+  <!-- Interruption & Grouping -->
+  <div class="card">
+    <h2>Grouping &amp; Behaviour</h2>
+    <div class="field-group">
+      <div class="field-block">
+        <span class="field-label">Interruption Level</span>
+        <select id="interruptionLevel">
+          <option value="active">Active (default)</option>
+          <option value="passive">Passive (no sound/badge)</option>
+          <option value="time-sensitive">Time Sensitive</option>
+          <option value="critical">Critical (bypasses Focus)</option>
+        </select>
+        <span class="field-hint">Time-Sensitive &amp; Critical require entitlements.</span>
+      </div>
+      <div class="field-block">
+        <span class="field-label">Category</span>
+        <input id="category" type="text" placeholder="MESSAGE_CATEGORY" spellcheck="false" />
+        <span class="field-hint">Matches a UNNotificationCategory registered in your app.</span>
+      </div>
+      <div class="field-block">
+        <span class="field-label">thread-id</span>
+        <input id="threadId" type="text" placeholder="group-id" spellcheck="false" />
+        <span class="field-hint">Groups notifications in Notification Center.</span>
+      </div>
+      <div class="field-block">
+        <span class="field-label">target-content-id</span>
+        <input id="targetContentId" type="text" placeholder="widget-id" spellcheck="false" />
+        <span class="field-hint">For updating a specific widget configuration.</span>
+      </div>
+      <div class="field-block">
+        <span class="field-label">relevance-score (0.0 – 1.0)</span>
+        <input id="relevanceScore" type="number" min="0" max="1" step="0.1" placeholder="0.5" />
+        <span class="field-hint">Higher = shown at top of Notification Summary.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom keys -->
+  <div class="card">
+    <h2>Custom Payload Keys</h2>
+    <div id="customKeys"></div>
+    <button class="add-key-btn" onclick="addCustomKey()">+ Add Custom Key</button>
+  </div>
+
+</div>
+
+<!-- RIGHT: Output -->
+<div class="output-panel">
+
+  <div class="output-block">
+    <div class="output-header">
+      <span class="output-label">APNs Payload JSON</span>
+      <span class="push-type-tag" id="pushTypeTag">apns-push-type: alert</span>
+      <button class="copy-btn" id="copyPayloadBtn" onclick="copyPayload()">Copy</button>
+    </div>
+    <pre id="payloadOutput">{}</pre>
+    <div class="size-row">
+      <div class="size-bar-bg"><div class="size-bar" id="sizeBar" style="width:0%"></div></div>
+      <span class="size-label" id="sizeLabel">0 / 4096 bytes</span>
+    </div>
+  </div>
+
+  <div class="output-block">
+    <div class="output-header">
+      <span class="output-label">cURL Test Command</span>
+      <button class="copy-btn" id="copyCurlBtn" onclick="copyCurl()">Copy</button>
+    </div>
+    <pre id="curlOutput"></pre>
+  </div>
+
+  <div style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:12px 14px;font-size:12.5px;color:var(--muted);margin-bottom:14px">
+    <b style="color:var(--warn)">To use the cURL command:</b> replace <code>&lt;JWT_TOKEN&gt;</code> with a valid APNs JWT (generated from your .p8 key). Your device token and bundle ID are pre-filled from the fields on the left.
+  </div>
+
+  <div class="tip-box">
+    <div>
+      <div style="font-weight:700;font-size:15px;margin-bottom:4px">✦ Support this project</div>
+      <div style="color:#9aa3b5;font-size:13px">Free tool by Orb Intelligence.</div>
+    </div>
+    <a href="https://buy.stripe.com/4gM28t2xG3SngLvbiY6wE01" target="_blank" rel="noopener"
+      style="display:inline-block;background:linear-gradient(180deg,#6b97ff,#4a78ff);color:#fff;font-weight:650;font-size:14px;padding:10px 22px;border-radius:10px;text-decoration:none;white-space:nowrap">
+      Support · $9.90
+    </a>
+  </div>
+
+</div>
+
+<footer style="margin-top:0">
+  Built by <b>Orb Intelligence</b>. Nothing is sent anywhere — all data stays in your browser. Device tokens entered here are used only in the cURL command displayed on screen.
+  <br><br>
+  More free tools:
+  <a href="https://appstore-metadata-auditor.vercel.app/" rel="noopener">Metadata Auditor</a> ·
+  <a href="https://ios-privacy-policy-generator.vercel.app/" rel="noopener">Privacy Policy Generator</a> ·
+  <a href="https://ios-app-review-generator.vercel.app/" rel="noopener">Review Responder</a> ·
+  <a href="https://appstore-screenshot-generator-theta.vercel.app/" rel="noopener">Screenshot Generator</a> ·
+  <a href="https://appstore-keyword-optimizer.vercel.app/" rel="noopener">Keyword Optimizer</a> ·
+  <a href="https://appstore-release-notes-generator.vercel.app/" rel="noopener">Release Notes Generator</a> ·
+  <a href="https://ios-app-icon-resizer.vercel.app/" rel="noopener">Icon Resizer</a> ·
+  <a href="https://appstore-submission-checklist.vercel.app/" rel="noopener">Submission Checklist</a> ·
+  <a href="https://ios-privacy-manifest-generator.vercel.app/" rel="noopener">Privacy Manifest Generator</a> ·
+  <a href="https://ios-entitlements-generator.vercel.app/" rel="noopener">Entitlements Generator</a> ·
+  <a href="https://testflight-feedback-organizer.vercel.app/" rel="noopener">Beta Feedback Organizer</a> ·
+  <a href="https://appstore-localization-helper.vercel.app/" rel="noopener">Localization Helper</a> ·
+  <a href="https://appstore-age-rating-calculator.vercel.app/" rel="noopener">Age Rating Calculator</a> ·
+  <a href="https://ios-iap-configurator.vercel.app/" rel="noopener">IAP Configurator</a> ·
+  <a href="https://ios-push-payload-builder.vercel.app/" rel="noopener">Push Payload Builder</a>
+</footer>
+
+</main>
+<script src="builder.js"></script>
+</body>
+</html>
